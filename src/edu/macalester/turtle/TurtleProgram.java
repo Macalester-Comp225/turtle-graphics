@@ -9,7 +9,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,7 +27,9 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     
     private Map<Turtle, TurtleSprite> sprites;
     private Set<AnimationCallback> animationsInProgress;
+    private Timer updateTimer;
     private double turtleSpeedFactor;
+    
     
     // ------ Setup ------
     
@@ -58,15 +59,21 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     }
 
     private void startUpdateTimer() {
-        Timer timer = new Timer(1, new ActionListener() {
+        updateTimer = new Timer(1, new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 if(paintNeeded)
                     repaint(1);
                 paintNeeded = false;
             }
         });
-        timer.setDelay(16);
-        timer.start();
+        updateTimer.setDelay(16);
+        updateTimer.start();
+    }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        updateTimer.stop();
+        super.finalize();
     }
 
     private void enableAntialiasing(Graphics2D g) {
@@ -121,8 +128,8 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         animate(turtle, Math.pow(Math.hypot(x1-x0, y1-y0) / 50, 0.7), new AnimationCallback() {
             @Override
             public void animate(TurtleSprite sprite) {
-                sprite.setX(curX());
-                sprite.setY(curY());
+                sprite.setX(animateParam(x0, x1));
+                sprite.setY(animateParam(y0, y1));
             }
 
             @Override
@@ -134,19 +141,11 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
                         BasicStroke.JOIN_ROUND));
                     g.setPaint(turtle.getColor());
                     g.draw(new Line2D.Double(
-                        x0 + 0.5,
+                        x0 + 0.5,    // half-pixel offset prevent fuzzy horz / vert lines
                         y0 + 0.5,
-                        curX() + 0.5,
-                        curY() + 0.5));
+                        animateParam(x0, x1) + 0.5,
+                        animateParam(y0, y1) + 0.5));
                 }
-            }
-            
-            private double curX() {
-                return x0 + (x1 - x0) * t;
-            }
-            
-            private double curY() {
-                return y0 + (y1 - y0) * t;
             }
         });
     }
@@ -156,7 +155,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         animate(turtle, Math.abs(newDir - oldDir) / 360, new AnimationCallback() {
             @Override
             public void animate(TurtleSprite sprite) {
-                sprite.setDirection(oldDir + (newDir - oldDir) * t);
+                sprite.setDirection(animateParam(oldDir, newDir));
             }
         });
     }
@@ -172,41 +171,35 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         Graphics2D g2 = (Graphics2D) g;
         enableAntialiasing(g2);
         
-        synchronized(this) {
-            if(paper != null)
+        if(paper != null)  // paint() may be called before startHook()
+            synchronized(this) {
                 g2.drawImage(paper, 0, 0, null);
             
-            if(animationsInProgress != null)
                 for(AnimationCallback callback : animationsInProgress)
                     callback.paint(g2);
             
-            if(sprites != null)
                 for(TurtleSprite sprite: sprites.values())
                     sprite.draw(g2);
-        }
-    }
-    
-    protected Rectangle2D normalizeRect(Rectangle2D.Double r) {
-        if(r.width < 0) {
-            r.x += r.width;
-            r.width *= -1;
-        }
-        if(r.height < 0) {
-            r.y += r.height;
-            r.height *= -1;
-        }
-        return r;
+            }
     }
     
     
     // ------ Turtle animation ------
     
     private abstract class AnimationCallback {
-        public double t;
+        private double t;
+        
+        public void setTime(double t) {
+            this.t = t;
+        }
         
         public abstract void animate(TurtleSprite sprite);
         
         public void paint(Graphics2D g) { }
+        
+        protected double animateParam(double start, double end) {
+            return start + (end - start) * t;
+        }
     }
     
     private void animate(Turtle turtle, double animTime, AnimationCallback callback) {
@@ -224,7 +217,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
                     break;
                 
                 synchronized(this) {
-                    callback.t = t;
+                    callback.setTime(t);
                     callback.animate(sprites.get(turtle));
                     paintNeeded = true;
                 }
@@ -241,7 +234,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         
         synchronized(this) {
             animationsInProgress.remove(callback);
-            callback.t = 1;
+            callback.setTime(1);
             callback.paint(paperGraphics);
         }
         turtleChanged(turtle); // animation done; get everything set to final state
