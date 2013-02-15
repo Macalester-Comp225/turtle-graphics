@@ -7,21 +7,36 @@ import edu.macalester.turtle.TurtleProgram;
 
 public class TurtleExercise extends TurtleProgram {
     public void run() {
-        Turtle turtle = new Turtle(400, 400, Color.MAGENTA);
-        add(turtle);
+        setTurtleSpeedFactor(200);
         
-        turtle.forward(2);
-        turtle.left(90);
-        turtle.forward(3);
-        turtle.left(45);
-        turtle.setColor(Color.BLUE);
-        turtle.forward(Math.sqrt(8));
-        turtle.left(90);
-        turtle.forward(Math.sqrt(8));
-        turtle.setColor(Color.MAGENTA);
-        turtle.left(45);
-        turtle.forward(3);
-        turtle.left(90);
-        turtle.forward(2);
+        Turtle sally = new Turtle(200, 500, Color.MAGENTA);
+        add(sally);
+        
+        Turtle fred = new Turtle(100, 200, Color.GREEN);
+        add(fred);
+        
+        sally.forward(2);
+        fred.forward(2.5);
+        sally.left(90);
+        sally.forward(3);
+        fred.backward(0.5);
+        fred.right(120);
+        sally.left(45);
+        sally.setColor(Color.BLUE);
+        fred.forward(2.5);
+        sally.forward(Math.sqrt(8));
+        sally.left(90);
+        fred.backward(0.5);
+        fred.right(120);
+        sally.forward(Math.sqrt(8));
+        sally.setColor(Color.MAGENTA);
+        sally.left(45);
+        fred.forward(2.5);
+        sally.forward(3);
+        fred.penUp();
+        fred.forward(1);
+        fred.penDown();
+        sally.left(90);
+        sally.forward(2);
     }
 }
