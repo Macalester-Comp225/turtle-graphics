@@ -9,7 +9,7 @@ public class TurtleDemo extends TurtleProgram {
     public void run() {
         Turtle turtle = new Turtle(getWidth() * 0.5, getHeight() * 0.8, Color.BLUE);
         add(turtle);
-        setTurtleSpeedFactor(2000);
+        setTurtleSpeedFactor(1000);
         turtle.setPenWidth(1);
         turtle.setStepSize(7);
         
@@ -20,6 +20,10 @@ public class TurtleDemo extends TurtleProgram {
             turtle.penDown();
             turtle.left(9);
         }
+        
+        turtle.setColor(new Color(1f, 0.3f, 0, 0.1f));
+        turtle.setStepSize(200);
+        drawMultiPoly(turtle, 5, 7, 2);
         
         remove(turtle);
     }
@@ -49,13 +53,6 @@ public class TurtleDemo extends TurtleProgram {
                 turtle.scaleStepBy(scale);
                 turtle.left(180 - 360.0 / sides);
             }
-            turtle.left(360.0 / sides);
-        }
-    }
-    
-    public void drawPoly(Turtle turtle, int sides) {
-        for(int n = 0; n < sides; n++) {
-            turtle.forward(1);
             turtle.left(360.0 / sides);
         }
     }

@@ -53,7 +53,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         
         initPaper();
         initTurtleDisplay();
-        setTurtleSpeedFactor(200);
+        setTurtleSpeedFactor(1000);
         startUpdateTimer();
     }
 
@@ -120,10 +120,18 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     }
 
 
-    // ------ Drawing ------
+    // ------ Turtle state updates ------
 
     @Override
-    public synchronized void turtleMoved(Turtle turtle, double x0, double y0, double x1, double y1) {
+    public void turtleMoved(final Turtle turtle, final double x0, final double y0, final double x1, final double y1) {
+        animate(turtle, Math.pow(Math.hypot(x1-x0, y1-y0) / 50, 0.7), new AnimationCallback() {
+            @Override
+            public void animate(TurtleDisplay disp, double t) {
+                disp.x = x0 + (x1 - x0) * t;
+                disp.y = y0 + (y1 - y0) * t;
+            }
+        });
+        
         if(turtle.isPenDown()) {
             paperGraphics.setStroke(new BasicStroke(
                 (float) turtle.getPenWidth(),
@@ -132,39 +140,16 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
             paperGraphics.setPaint(turtle.getColor());
             paperGraphics.draw(new Line2D.Double(x0, y0, x1, y1));
         }
-        
-        turtleChanged(turtle); // animation done; get everything set to final state
     }
     
     @Override
-    public void turtleTurned(Turtle turtle, double oldDir, double newDir) {
-        double animTime = Math.abs(newDir - oldDir) / 360 * turtleSpeedFactor;
-        long animStart = System.currentTimeMillis();
-        
-        if(animTime >= 0.001) {
-            while(true) {
-                long now = System.currentTimeMillis();
-                double t = (now - animStart) / animTime;
-                if(t >= 1)
-                    break;
-                
-                synchronized(this) {
-                    TurtleDisplay disp = turtleDisplays.get(turtle);
-                    disp.direction = oldDir + (newDir - oldDir) * t;
-                    paintNeeded = true;
-                }
-                
-                try {
-                    long delay = 16 - (System.currentTimeMillis() - now);
-                    if(delay > 0)
-                        Thread.sleep(delay);
-                } catch (InterruptedException e) {
-                    return; // cancel animation
-                }
+    public void turtleTurned(final Turtle turtle, final double oldDir, final double newDir) {
+        animate(turtle, Math.abs(newDir - oldDir) / 360, new AnimationCallback() {
+            @Override
+            public void animate(TurtleDisplay disp, double t) {
+                disp.direction = oldDir + (newDir - oldDir) * t;
             }
-        }
-        
-        turtleChanged(turtle); // animation done; get everything set to final state
+        });
     }
 
     @Override
@@ -187,6 +172,45 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
                     drawTurtle(t, g2);
         }
     }
+    
+    
+    // ------ Turtle animation ------
+    
+    private interface AnimationCallback {
+        void animate(TurtleDisplay disp, double t);
+    }
+    
+    private void animate(Turtle turtle, double animTime, AnimationCallback callback) {
+        animTime *= turtleSpeedFactor;
+        long animStart = System.currentTimeMillis();
+        
+        if(animTime >= 0.001) {
+            while(true) {
+                long now = System.currentTimeMillis();
+                double t = (now - animStart) / animTime;
+                if(t >= 1)
+                    break;
+                
+                synchronized(this) {
+                    callback.animate(turtleDisplays.get(turtle), t);
+                    paintNeeded = true;
+                }
+                
+                try {
+                    long delay = 16 - (System.currentTimeMillis() - now);
+                    if(delay > 0)
+                        Thread.sleep(delay);
+                } catch (InterruptedException e) {
+                    return; // cancel animation
+                }
+            }
+        }
+        
+        turtleChanged(turtle); // animation done; get everything set to final state
+    }
+    
+    
+    // ------ Drawing ------
     
     private static final double
         TURTLE_IMG_SCALE = 0.5,
