@@ -8,6 +8,13 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+/**
+ * A visual representation of a virtual turtle robot. A TurtleSprite's position and direction may
+ * differ from the state of the turtle it represents; this is useful for animating state changes.
+ * You can bring a sprite's state back into sync with the turtle's using {@link #sync()}.
+ * 
+ * @author Paul Cantrell
+ */
 public class TurtleSprite {
     private static final double TURTLE_BODY_SIZE = 32;
     private static final BufferedImage shadowImg, bodyImg, overlayImg;
@@ -33,17 +40,27 @@ public class TurtleSprite {
     private double x, y, direction;
     private double turtleSize = 0.5;
 
+    /**
+     * Creates a sprite to represent the given turtle.
+     */
     public TurtleSprite(Turtle turtle) {
         this.turtle = turtle;
         sync();
     }
     
+    /**
+     * Makes the sprite's state match its turtle's, in case the sprite's position or direction
+     * have changed during animation.
+     */
     public void sync() {
         x = turtle.getX();
         y = turtle.getY();
         direction = turtle.getDirection();
     }
 
+    /**
+     * Draws the sprite to the given graphics context.
+     */
     public void draw(Graphics2D g2) {
         AffineTransform trans = AffineTransform.getTranslateInstance(
             x - shadowImg.getWidth()  / 2 * turtleSize,
@@ -96,6 +113,9 @@ public class TurtleSprite {
         this.direction = direction;
     }
 
+    /**
+     * The scale of the turtle sprite, relative to its default size. 
+     */
     public double getTurtleSize() {
         return turtleSize;
     }

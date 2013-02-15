@@ -19,6 +19,18 @@ import javax.swing.Timer;
 
 import acm.program.Program;
 
+/**
+ * Base class for applets rendering turtle graphics to the screen.
+ * Displays an animated turtle sprite to show the turtle's current state.
+ * <p>
+ * To change the speed of turtle animations, call {@link #setTurtleSpeedFactor(double)}.
+ * To draw as fast as possible, set the speed factor to 0.
+ * <p>
+ * 
+ * 
+ * @see Turtle
+ * @author Paul Cantrell
+ */
 public abstract class TurtleProgram extends Program implements TurtleObserver {
     
     private BufferedImage paper;
@@ -93,18 +105,28 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
 
     // ------ Display settings ------
 
+    /**
+     * Places the given turtle on the virtual paper. Subsequent turtle actions will draw to 
+     * this applet's window.
+     */
     public synchronized void add(Turtle turtle) {
         sprites.put(turtle, new TurtleSprite(turtle));
         turtle.addObserver(this);
         paintNeeded = true;
     }
     
+    /**
+     * Removes the given turtle from the virtual paper.
+     */
     public synchronized void remove(Turtle turtle) {
         sprites.remove(turtle);
         turtle.removeObserver(this);
         paintNeeded = true;
     }
     
+    /**
+     * Clears the paper to white. Does not remove any turtles.
+     */
     public synchronized void clear() {
         AffineTransform savedXform = paperGraphics.getTransform();
         paperGraphics.setTransform(AffineTransform.getTranslateInstance(0, 0));
@@ -113,10 +135,17 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         paperGraphics.setTransform(savedXform);
     }
     
+    /**
+     * Controls the speed of all turtle animations. Zero makes animation run as fast as possible.
+     * The default is 1000.
+     */
     public void setTurtleSpeedFactor(double factor) {
         turtleSpeedFactor = factor;
     }
     
+    /**
+     * Resizes the sprites of all turtles currently on the canvas. Does not affect drawing.
+     */
     public void setTurtleSize(double size) {
         for(TurtleSprite sprite : sprites.values())
             sprite.setTurtleSize(size * 0.5);
