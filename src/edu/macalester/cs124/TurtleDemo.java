@@ -7,12 +7,10 @@ import edu.macalester.turtle.TurtleProgram;
 
 public class TurtleDemo extends TurtleProgram {
     public void run() {
-        Turtle turtle = new Turtle(this);
-        setTurboMode(true);
+        Turtle turtle = new Turtle(getWidth() * 0.5, getHeight() * 0.8, Color.BLUE);
         add(turtle);
         turtle.setPenWidth(1);
         turtle.setStepSize(7);
-        turtle.setY(getHeight() * 0.4);
         
         for(double n = 0; n < 360; n += 9) {
             drawFunkyStar(turtle, 7, n, -117, 1.5, 2.4);

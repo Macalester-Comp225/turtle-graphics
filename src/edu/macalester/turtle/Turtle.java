@@ -15,10 +15,17 @@ public class Turtle {
     private Color color;
     private boolean drawing;
     
-    public Turtle(TurtleObserver renderer) {
+    public Turtle(double x, double y) {
+        this(x, y, Color.BLACK);
+    }
+
+    public Turtle(double x, double y, Color color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        
         penWidth = 1;
         stepSize = 30;
-        color = Color.BLACK; 
         drawing = true;
         
         this.observers = new ArrayList<TurtleObserver>();
@@ -126,6 +133,10 @@ public class Turtle {
     public void setColor(Color color) {
         this.color = color;
         changed();
+    }
+
+    public boolean isPenDown() {
+        return drawing;
     }
     
     // ------ Observers ------

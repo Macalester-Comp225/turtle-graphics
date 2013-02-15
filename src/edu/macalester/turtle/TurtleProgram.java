@@ -8,12 +8,14 @@ import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.imageio.ImageIO;
 import javax.swing.Timer;
 
 import acm.program.Program;
@@ -23,8 +25,9 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     private BufferedImage paper;
     private Graphics2D paperGraphics;
     private boolean paintNeeded;
+    
     private List<Turtle> turtles;
-    private Path2D turtlePath;
+    private BufferedImage shadowImg, bodyImg, overlayImg;
     private boolean turboMode;
     
     // ------ Setup ------
@@ -44,20 +47,24 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         paperGraphics.setColor(Color.WHITE);
         paperGraphics.fillRect(0, 0, paper.getWidth(), paper.getHeight());
         
-        paperGraphics.setTransform(AffineTransform.getTranslateInstance(getWidth() / 2, getHeight() / 2));
         enableAntialiasing(paperGraphics);
         paintNeeded = true;
     }
     
     private void initTurtleDisplay() {
         turtles = new ArrayList<Turtle>();
-        
-        turtlePath = new Path2D.Double();
-        double w = 7, h = 5;
-        turtlePath.moveTo(w, 0);
-        turtlePath.lineTo(-w, h);
-        turtlePath.quadTo(0, 0, -w, -h);
-        turtlePath.closePath();
+        overlayImg = readImageResource("Turtle-overlay");
+        bodyImg    = readImageResource("Turtle-body");
+        shadowImg  = readImageResource("Turtle-shadow");
+    }
+    
+    private BufferedImage readImageResource(String imgName) {
+        try {
+            return ImageIO.read(getClass().getResource("/images/" + imgName + ".png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
+        }
     }
 
     private void startUpdateTimer() {
@@ -145,20 +152,50 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
                 // ignore
             }
     }
+    
+    private static final double
+        TURTLE_IMG_SCALE = 0.5,
+        TURTLE_BODY_SIZE = 32;
 
     private void drawTurtle(Turtle turtle, Graphics2D g2) {
-        AffineTransform savedXform = g2.getTransform();
+        AffineTransform trans = AffineTransform.getTranslateInstance(
+            turtle.getX() - shadowImg.getWidth()  / 2 * TURTLE_IMG_SCALE,
+            turtle.getY() - shadowImg.getHeight() / 2 * TURTLE_IMG_SCALE);
+        trans.scale(TURTLE_IMG_SCALE, TURTLE_IMG_SCALE);
         
-        g2.setTransform(paperGraphics.getTransform());
-        g2.translate(turtle.getX(), turtle.getY());
-        g2.rotate(turtle.getDirection() * Math.PI / 180);
-        g2.setPaint(turtle.getColor());
-        g2.fill(turtlePath);
-        g2.setPaint(Color.BLACK);
-        g2.setStroke(new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
-        g2.draw(turtlePath);
+        AffineTransform transAndRot = new AffineTransform(trans); 
+        transAndRot.rotate(
+            (turtle.getDirection() + 90) * Math.PI / 180,   // image is oriented up
+            shadowImg.getWidth()  / 2,
+            shadowImg.getHeight() / 2);
         
-        g2.setTransform(savedXform);
+        g2.drawImage(shadowImg, trans, null);
+        
+        double radius = TURTLE_BODY_SIZE * TURTLE_IMG_SCALE / 2;
+        if(turtle.isPenDown()) {
+            g2.setPaint(turtle.getColor());
+            g2.fill(new Ellipse2D.Double(
+                turtle.getX() - radius,
+                turtle.getY() - radius,
+                radius * 2,
+                radius * 2));
+        }
+        
+        g2.drawImage(bodyImg, transAndRot, null);
+        g2.drawImage(overlayImg, trans, null);
+        
+//        AffineTransform savedXform = g2.getTransform();
+//        
+//        g2.setTransform(paperGraphics.getTransform());
+//        g2.translate(turtle.getX(), turtle.getY());
+//        g2.rotate(turtle.getDirection() * Math.PI / 180);
+//        g2.setPaint(turtle.getColor());
+//        g2.fill(turtlePath);
+//        g2.setPaint(Color.BLACK);
+//        g2.setStroke(new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
+//        g2.draw(turtlePath);
+//        
+//        g2.setTransform(savedXform);
     }
     
     public void setTurboMode(boolean turboMode) {
