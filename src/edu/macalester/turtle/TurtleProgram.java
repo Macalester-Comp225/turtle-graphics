@@ -8,17 +8,14 @@ import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.imageio.ImageIO;
 import javax.swing.Timer;
 
 import acm.program.Program;
@@ -29,28 +26,11 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     private Graphics2D paperGraphics;
     private boolean paintNeeded;
     
-    private Map<Turtle, TurtleDisplay> turtleDisplays;
+    private Map<Turtle, TurtleSprite> sprites;
     private Set<AnimationCallback> animationsInProgress;
-    private double turtleSize = 0.5;
     private double turtleSpeedFactor;
-    private static final BufferedImage shadowImg, bodyImg, overlayImg;
     
     // ------ Setup ------
-    
-    static {
-        overlayImg = readImageResource("Turtle-overlay");
-        bodyImg    = readImageResource("Turtle-body");
-        shadowImg  = readImageResource("Turtle-shadow");
-    }
-    
-    private static BufferedImage readImageResource(String imgName) {
-        try {
-            return ImageIO.read(TurtleProgram.class.getResource("/images/" + imgName + ".png"));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
-        }
-    }
     
     @Override
     public void startHook() {
@@ -73,7 +53,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     }
     
     private void initTurtleDisplay() {
-        turtleDisplays = new HashMap<Turtle, TurtleDisplay>();
+        sprites = new HashMap<Turtle, TurtleSprite>();
         animationsInProgress = new HashSet<AnimationCallback>();
     }
 
@@ -105,13 +85,13 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     // ------ Display settings ------
 
     public synchronized void add(Turtle turtle) {
-        turtleDisplays.put(turtle, new TurtleDisplay(turtle));
+        sprites.put(turtle, new TurtleSprite(turtle));
         turtle.addObserver(this);
         paintNeeded = true;
     }
     
     public synchronized void remove(Turtle turtle) {
-        turtleDisplays.remove(turtle);
+        sprites.remove(turtle);
         turtle.removeObserver(this);
         paintNeeded = true;
     }
@@ -129,7 +109,8 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     }
     
     public void setTurtleSize(double size) {
-        this.turtleSize = size * 0.5;
+        for(TurtleSprite sprite : sprites.values())
+            sprite.setTurtleSize(size * 0.5);
     }
 
 
@@ -139,9 +120,9 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     public void turtleMoved(final Turtle turtle, final double x0, final double y0, final double x1, final double y1) {
         animate(turtle, Math.pow(Math.hypot(x1-x0, y1-y0) / 50, 0.7), new AnimationCallback() {
             @Override
-            public void animate(TurtleDisplay disp) {
-                disp.x = curX();
-                disp.y = curY();
+            public void animate(TurtleSprite sprite) {
+                sprite.setX(curX());
+                sprite.setY(curY());
             }
 
             @Override
@@ -174,15 +155,15 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     public void turtleTurned(final Turtle turtle, final double oldDir, final double newDir) {
         animate(turtle, Math.abs(newDir - oldDir) / 360, new AnimationCallback() {
             @Override
-            public void animate(TurtleDisplay disp) {
-                disp.direction = oldDir + (newDir - oldDir) * t;
+            public void animate(TurtleSprite sprite) {
+                sprite.setDirection(oldDir + (newDir - oldDir) * t);
             }
         });
     }
 
     @Override
     public synchronized void turtleChanged(Turtle turtle) {
-        turtleDisplays.get(turtle).sync();
+        sprites.get(turtle).sync();
         paintNeeded = true;
     }
     
@@ -199,9 +180,9 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
                 for(AnimationCallback callback : animationsInProgress)
                     callback.paint(g2);
             
-            if(turtleDisplays != null)
-                for(TurtleDisplay t: turtleDisplays.values())
-                    drawTurtle(t, g2);
+            if(sprites != null)
+                for(TurtleSprite sprite: sprites.values())
+                    sprite.draw(g2);
         }
     }
     
@@ -223,7 +204,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     private abstract class AnimationCallback {
         public double t;
         
-        public abstract void animate(TurtleDisplay disp);
+        public abstract void animate(TurtleSprite sprite);
         
         public void paint(Graphics2D g) { }
     }
@@ -244,7 +225,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
                 
                 synchronized(this) {
                     callback.t = t;
-                    callback.animate(turtleDisplays.get(turtle));
+                    callback.animate(sprites.get(turtle));
                     paintNeeded = true;
                 }
                 
@@ -264,54 +245,5 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
             callback.paint(paperGraphics);
         }
         turtleChanged(turtle); // animation done; get everything set to final state
-    }
-    
-    
-    // ------ Drawing ------
-    
-    private static final double TURTLE_BODY_SIZE = 32;
-
-    private void drawTurtle(TurtleDisplay disp, Graphics2D g2) {
-        AffineTransform trans = AffineTransform.getTranslateInstance(
-            disp.x - shadowImg.getWidth()  / 2 * turtleSize,
-            disp.y - shadowImg.getHeight() / 2 * turtleSize);
-        trans.scale(turtleSize, turtleSize);
-        
-        AffineTransform transAndRot = new AffineTransform(trans); 
-        transAndRot.rotate(
-            (disp.direction + 90) * Math.PI / 180,   // image is oriented up
-            shadowImg.getWidth()  / 2,
-            shadowImg.getHeight() / 2);
-        
-        g2.drawImage(shadowImg, trans, null);
-        
-        double radius = TURTLE_BODY_SIZE * turtleSize / 2;
-        if(disp.turtle.isPenDown()) {
-            g2.setPaint(disp.turtle.getColor());
-            g2.fill(new Ellipse2D.Double(
-                disp.x - radius,
-                disp.y - radius,
-                radius * 2,
-                radius * 2));
-        }
-        
-        g2.drawImage(bodyImg, transAndRot, null);
-        g2.drawImage(overlayImg, trans, null);
-    }
-    
-    private class TurtleDisplay {
-        public final Turtle turtle;
-        public double x, y, direction;
-        
-        public TurtleDisplay(Turtle turtle) {
-            this.turtle = turtle;
-            sync();
-        }
-
-        public void sync() {
-            x = turtle.getX();
-            y = turtle.getY();
-            direction = turtle.getDirection();
-        }
     }
 }
