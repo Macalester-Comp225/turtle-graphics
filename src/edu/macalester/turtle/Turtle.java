@@ -39,12 +39,12 @@ public class Turtle {
     
     public void forward(double steps) {
         double x0 = x, y0 = y;
+        
         x += steps * stepSize * cos(direction);
         y += steps * stepSize * sin(direction);
-        if(drawing)
-            for(TurtleObserver observer : observers)
-                observer.drawLine(x0, y0, x, y, color, penWidth);
-        changed();
+        
+        for(TurtleObserver observer : observers)
+            observer.turtleMoved(this, x0, y0, x, y);
     }
     
     public void backward() {
@@ -56,8 +56,12 @@ public class Turtle {
     }
     
     public void right(double degrees) {
+        double oldDirection = getDirection();
+        
         direction += degrees * PI / 180;
-        changed();
+        
+        for(TurtleObserver observer : observers)
+            observer.turtleTurned(this, oldDirection, getDirection());
     }
     
     public void left(double degrees) {
