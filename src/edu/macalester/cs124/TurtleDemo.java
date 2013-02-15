@@ -9,6 +9,7 @@ public class TurtleDemo extends TurtleProgram {
     public void run() {
         Turtle turtle = new Turtle(getWidth() * 0.5, getHeight() * 0.8, Color.BLUE);
         add(turtle);
+        setTurtleStepDelay(5);
         turtle.setPenWidth(1);
         turtle.setStepSize(7);
         

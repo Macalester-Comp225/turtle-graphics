@@ -28,7 +28,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     
     private List<Turtle> turtles;
     private BufferedImage shadowImg, bodyImg, overlayImg;
-    private boolean turboMode;
+    private int turtleStepDelay;
     
     // ------ Setup ------
     
@@ -38,6 +38,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         
         initPaper();
         initTurtleDisplay();
+        setTurtleStepDelay(200);
         startUpdateTimer();
     }
 
@@ -87,7 +88,10 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
             RenderingHints.KEY_RENDERING,
             RenderingHints.VALUE_RENDER_QUALITY);
     }
-    
+
+
+    // ------ Display settings ------
+
     public synchronized void add(Turtle turtle) {
         turtles.add(turtle);
         turtle.addObserver(this);
@@ -108,8 +112,29 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         paperGraphics.setTransform(savedXform);
     }
     
+    protected void setTurtleStepDelay(int delay) {
+        turtleStepDelay = delay;
+    }
+
+
     // ------ Drawing ------
 
+    @Override
+    public void turtleChanged(Turtle turtle) {
+        int delay;
+        synchronized(this) {
+            paintNeeded = true;
+            delay = turtleStepDelay;
+        }
+        
+        if(delay > 0)
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException e) {
+                // ignore
+            }
+    }
+    
     @Override
     public void paint(Graphics g) {
         Graphics2D g2 = (Graphics2D) g;
@@ -134,23 +159,6 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         paperGraphics.setPaint(color);
         paperGraphics.draw(new Line2D.Double(x0, y0, x1, y1));
         paintNeeded = true;
-    }
-
-    @Override
-    public void turtleChanged(Turtle turtle) {
-        boolean sleep = false;
-        synchronized(this) {
-            paintNeeded = true;
-            if(!turboMode)
-                sleep = true;
-        }
-        
-        if(sleep)
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                // ignore
-            }
     }
     
     private static final double
@@ -197,10 +205,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
 //        
 //        g2.setTransform(savedXform);
     }
-    
-    public void setTurboMode(boolean turboMode) {
-        this.turboMode = turboMode;
-    }
+
 }
 
 
