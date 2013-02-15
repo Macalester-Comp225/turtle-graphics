@@ -191,13 +191,13 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     private abstract class AnimationCallback {
         private double t;
         
-        public void setTime(double t) {
-            this.t = t;
-        }
-        
         public abstract void animate(TurtleSprite sprite);
         
         public void paint(Graphics2D g) { }
+        
+        public void setTime(double t) {
+            this.t = t;
+        }
         
         protected double animateParam(double start, double end) {
             return start + (end - start) * t;
