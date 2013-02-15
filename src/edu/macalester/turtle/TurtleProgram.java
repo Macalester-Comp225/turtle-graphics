@@ -31,6 +31,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     
     private Map<Turtle, TurtleDisplay> turtleDisplays;
     private Set<AnimationCallback> animationsInProgress;
+    private double turtleSize = 0.5;
     private double turtleSpeedFactor;
     private static final BufferedImage shadowImg, bodyImg, overlayImg;
     
@@ -125,6 +126,10 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     
     public void setTurtleSpeedFactor(double factor) {
         turtleSpeedFactor = factor;
+    }
+    
+    public void setTurtleSize(double size) {
+        this.turtleSize = size * 0.5;
     }
 
 
@@ -264,15 +269,13 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     
     // ------ Drawing ------
     
-    private static final double
-        TURTLE_IMG_SCALE = 0.5,
-        TURTLE_BODY_SIZE = 32;
+    private static final double TURTLE_BODY_SIZE = 32;
 
     private void drawTurtle(TurtleDisplay disp, Graphics2D g2) {
         AffineTransform trans = AffineTransform.getTranslateInstance(
-            disp.x - shadowImg.getWidth()  / 2 * TURTLE_IMG_SCALE,
-            disp.y - shadowImg.getHeight() / 2 * TURTLE_IMG_SCALE);
-        trans.scale(TURTLE_IMG_SCALE, TURTLE_IMG_SCALE);
+            disp.x - shadowImg.getWidth()  / 2 * turtleSize,
+            disp.y - shadowImg.getHeight() / 2 * turtleSize);
+        trans.scale(turtleSize, turtleSize);
         
         AffineTransform transAndRot = new AffineTransform(trans); 
         transAndRot.rotate(
@@ -282,7 +285,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         
         g2.drawImage(shadowImg, trans, null);
         
-        double radius = TURTLE_BODY_SIZE * TURTLE_IMG_SCALE / 2;
+        double radius = TURTLE_BODY_SIZE * turtleSize / 2;
         if(disp.turtle.isPenDown()) {
             g2.setPaint(disp.turtle.getColor());
             g2.fill(new Ellipse2D.Double(
