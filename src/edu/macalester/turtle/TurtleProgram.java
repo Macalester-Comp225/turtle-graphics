@@ -61,9 +61,11 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     private void startUpdateTimer() {
         updateTimer = new Timer(1, new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                if(paintNeeded)
-                    repaint(1);
-                paintNeeded = false;
+                synchronized(TurtleProgram.this) {
+                    if(paintNeeded)
+                        repaint(1);
+                    paintNeeded = false;
+                }
             }
         });
         updateTimer.setDelay(16);
