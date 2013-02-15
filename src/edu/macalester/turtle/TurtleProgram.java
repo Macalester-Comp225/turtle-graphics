@@ -10,10 +10,13 @@ import java.awt.event.ActionListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.swing.Timer;
@@ -27,6 +30,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     private boolean paintNeeded;
     
     private Map<Turtle, TurtleDisplay> turtleDisplays;
+    private Set<AnimationCallback> animationsInProgress;
     private double turtleSpeedFactor;
     private static final BufferedImage shadowImg, bodyImg, overlayImg;
     
@@ -69,6 +73,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     
     private void initTurtleDisplay() {
         turtleDisplays = new HashMap<Turtle, TurtleDisplay>();
+        animationsInProgress = new HashSet<AnimationCallback>();
     }
 
     private void startUpdateTimer() {
@@ -90,6 +95,9 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         g.setRenderingHint(
             RenderingHints.KEY_RENDERING,
             RenderingHints.VALUE_RENDER_QUALITY);
+        g.setRenderingHint(
+            RenderingHints.KEY_STROKE_CONTROL,
+            RenderingHints.VALUE_STROKE_PURE);
     }
 
 
@@ -126,27 +134,42 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     public void turtleMoved(final Turtle turtle, final double x0, final double y0, final double x1, final double y1) {
         animate(turtle, Math.pow(Math.hypot(x1-x0, y1-y0) / 50, 0.7), new AnimationCallback() {
             @Override
-            public void animate(TurtleDisplay disp, double t) {
-                disp.x = x0 + (x1 - x0) * t;
-                disp.y = y0 + (y1 - y0) * t;
+            public void animate(TurtleDisplay disp) {
+                disp.x = curX();
+                disp.y = curY();
+            }
+
+            @Override
+            public void paint(Graphics2D g) {
+                if(turtle.isPenDown()) {
+                    g.setStroke(new BasicStroke(
+                        (float) turtle.getPenWidth(),
+                        BasicStroke.CAP_ROUND,
+                        BasicStroke.JOIN_ROUND));
+                    g.setPaint(turtle.getColor());
+                    g.draw(new Line2D.Double(
+                        x0 + 0.5,
+                        y0 + 0.5,
+                        curX() + 0.5,
+                        curY() + 0.5));
+                }
+            }
+            
+            private double curX() {
+                return x0 + (x1 - x0) * t;
+            }
+            
+            private double curY() {
+                return y0 + (y1 - y0) * t;
             }
         });
-        
-        if(turtle.isPenDown()) {
-            paperGraphics.setStroke(new BasicStroke(
-                (float) turtle.getPenWidth(),
-                BasicStroke.CAP_ROUND,
-                BasicStroke.JOIN_ROUND));
-            paperGraphics.setPaint(turtle.getColor());
-            paperGraphics.draw(new Line2D.Double(x0, y0, x1, y1));
-        }
     }
-    
+
     @Override
     public void turtleTurned(final Turtle turtle, final double oldDir, final double newDir) {
         animate(turtle, Math.abs(newDir - oldDir) / 360, new AnimationCallback() {
             @Override
-            public void animate(TurtleDisplay disp, double t) {
+            public void animate(TurtleDisplay disp) {
                 disp.direction = oldDir + (newDir - oldDir) * t;
             }
         });
@@ -166,24 +189,47 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         synchronized(this) {
             if(paper != null)
                 g2.drawImage(paper, 0, 0, null);
-        
+            
+            if(animationsInProgress != null)
+                for(AnimationCallback callback : animationsInProgress)
+                    callback.paint(g2);
+            
             if(turtleDisplays != null)
                 for(TurtleDisplay t: turtleDisplays.values())
                     drawTurtle(t, g2);
         }
     }
     
+    protected Rectangle2D normalizeRect(Rectangle2D.Double r) {
+        if(r.width < 0) {
+            r.x += r.width;
+            r.width *= -1;
+        }
+        if(r.height < 0) {
+            r.y += r.height;
+            r.height *= -1;
+        }
+        return r;
+    }
+    
     
     // ------ Turtle animation ------
     
-    private interface AnimationCallback {
-        void animate(TurtleDisplay disp, double t);
+    private abstract class AnimationCallback {
+        public double t;
+        
+        public abstract void animate(TurtleDisplay disp);
+        
+        public void paint(Graphics2D g) { }
     }
     
     private void animate(Turtle turtle, double animTime, AnimationCallback callback) {
+        synchronized (this) {
+            animationsInProgress.add(callback);
+        }
+        
         animTime *= turtleSpeedFactor;
         long animStart = System.currentTimeMillis();
-        
         if(animTime >= 0.001) {
             while(true) {
                 long now = System.currentTimeMillis();
@@ -192,7 +238,8 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
                     break;
                 
                 synchronized(this) {
-                    callback.animate(turtleDisplays.get(turtle), t);
+                    callback.t = t;
+                    callback.animate(turtleDisplays.get(turtle));
                     paintNeeded = true;
                 }
                 
@@ -206,6 +253,11 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
             }
         }
         
+        synchronized(this) {
+            animationsInProgress.remove(callback);
+            callback.t = 1;
+            callback.paint(paperGraphics);
+        }
         turtleChanged(turtle); // animation done; get everything set to final state
     }
     
