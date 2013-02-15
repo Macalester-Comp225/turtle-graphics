@@ -5,11 +5,11 @@ import java.awt.Color;
 import edu.macalester.turtle.Turtle;
 import edu.macalester.turtle.TurtleProgram;
 
-public class TurtleDemo extends TurtleProgram {
+public class FancyDemo extends TurtleProgram {
     public void run() {
         Turtle turtle = new Turtle(getWidth() * 0.5, getHeight() * 0.8, Color.BLUE);
         add(turtle);
-        setTurtleSpeedFactor(500);
+        setTurtleSpeedFactor(1);
         turtle.setPenWidth(1);
         turtle.setStepSize(7);
         
