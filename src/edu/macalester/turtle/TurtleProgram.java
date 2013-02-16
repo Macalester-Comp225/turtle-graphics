@@ -41,6 +41,7 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
     private Set<AnimationCallback> animationsInProgress;
     private Timer updateTimer;
     private double turtleSpeedFactor;
+    private boolean turtlesVisible = true;
     
     
     // ------ Setup ------
@@ -150,6 +151,13 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
         for(TurtleSprite sprite : sprites.values())
             sprite.setTurtleSize(size * 0.5);
     }
+    
+    /**
+     * Shows or hides the turtle sprites. Does not affect drawing.
+     */
+    public void setTurtlesVisible(boolean turtlesVisible) {
+        this.turtlesVisible = turtlesVisible;
+    }
 
 
     // ------ Turtle state updates ------
@@ -209,8 +217,9 @@ public abstract class TurtleProgram extends Program implements TurtleObserver {
                 for(AnimationCallback callback : animationsInProgress)
                     callback.paint(g2);
             
-                for(TurtleSprite sprite: sprites.values())
-                    sprite.draw(g2);
+                if(turtlesVisible)
+                    for(TurtleSprite sprite: sprites.values())
+                        sprite.draw(g2);
             }
     }
     
