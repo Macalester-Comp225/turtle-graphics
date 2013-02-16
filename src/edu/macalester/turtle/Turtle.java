@@ -106,7 +106,7 @@ public class Turtle {
     public void right(double degrees) {
         double oldDirection = getDirection();
         
-        direction += degrees * PI / 180;
+        direction = (direction + degrees * PI / 180) % (2 * PI);
         
         for(TurtleObserver observer : observers)
             observer.turtleTurned(this, oldDirection, getDirection());
