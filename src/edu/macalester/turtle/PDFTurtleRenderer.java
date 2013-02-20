@@ -63,4 +63,8 @@ public class PDFTurtleRenderer implements TurtleObserver {
     public void turtleChanged(Turtle turtle) {
          // ignore
     }
+
+    public void add(Turtle turtle) {
+         turtle.addObserver(this);
+    }
 }
