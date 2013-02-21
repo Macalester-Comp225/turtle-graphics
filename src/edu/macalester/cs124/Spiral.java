@@ -6,6 +6,8 @@ import edu.macalester.generator.PrimeGenerator;
 import edu.macalester.turtle.Turtle;
 import edu.macalester.turtle.TurtleProgram;
 
+/** Awesome example! */
+
 public class Spiral extends TurtleProgram {
     public void run() {
         setTurtleSpeedFactor(0);
