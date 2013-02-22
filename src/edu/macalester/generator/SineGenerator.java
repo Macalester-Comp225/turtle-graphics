@@ -12,8 +12,9 @@ public class SineGenerator extends Generator {
     }
 
     public double next() {
+        double prevX = x;  // so that we return sin(start) first
         x += step;
-        return Math.sin(x) * amp;
+        return Math.sin(prevX) * amp;
     }
 
 }
