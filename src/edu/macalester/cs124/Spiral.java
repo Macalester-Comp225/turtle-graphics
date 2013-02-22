@@ -2,33 +2,37 @@ package edu.macalester.cs124;
 
 import java.awt.Color;
 
-import edu.macalester.generator.PrimeGenerator;
+import edu.macalester.generator.ConstantGenerator;
+import edu.macalester.generator.Generator;
+import edu.macalester.generator.SineGenerator;
 import edu.macalester.turtle.Turtle;
 import edu.macalester.turtle.TurtleProgram;
 
-/** Awesome example! */
 
 public class Spiral extends TurtleProgram {
     public void run() {
         setTurtleSpeedFactor(0);
         
-        spiral(Color.GREEN, 90);
-        spiral(Color.BLUE, 90.1);
+        spiral(
+            Color.BLUE,
+            new ConstantGenerator(2),  // step
+            new SineGenerator(0, 0.0004, 180));  // angle
         
-        println("Done!");
+        spiral(
+            Color.GREEN,
+            new ConstantGenerator(1),
+            new SineGenerator(0, 0.0004, 180));
     }
 
-    private void spiral(Color spiralColor, double angle) {
-        PrimeGenerator generator = new PrimeGenerator(2);
-        
+    private void spiral(Color spiralColor, Generator stepGen, Generator angleGen) {
         Turtle turtle = new Turtle(getWidth() / 2, getHeight() / 2);
         add(turtle);
         turtle.setColor(spiralColor);
         turtle.setStepSize(1);
         
         while(turtleIsNearScreen(turtle)) {
-            turtle.forward(generator.next());
-            turtle.left(angle);
+            turtle.forward(stepGen.next());
+            turtle.left(angleGen.next());
         }
         remove(turtle);
     }

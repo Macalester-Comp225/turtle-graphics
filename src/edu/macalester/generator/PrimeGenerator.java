@@ -1,14 +1,14 @@
 package edu.macalester.generator;
 
 
-public class PrimeGenerator {
+public class PrimeGenerator extends Generator {
     private int cur;
     
     public PrimeGenerator(int start) {
         cur = start - 1;  // make start the next number tested
     }
     
-    public int next() {
+    public double next() {
         while(true) {
             cur++;
             if(isPrime(cur))
