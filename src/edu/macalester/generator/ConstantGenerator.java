@@ -10,4 +10,8 @@ public class ConstantGenerator extends Generator {
     public double next() {
         return constant;
     }
+    
+    public void skip(int numSteps) {
+        // do nothing!
+    }
 }
