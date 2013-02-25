@@ -1,20 +1,20 @@
 package edu.macalester.generator;
 
 public class SineGenerator extends Generator {
-    private double x;
-    private double step;
-    private double amp;
+    private Generator stepGen;
+    private Generator ampGen;
     
     public SineGenerator(double x, double step, double amp) {
-        this.x = x;
-        this.step = step;
-        this.amp = amp;
+        stepGen = new SteppingGenerator(x, step);
+        ampGen = new ConstantGenerator(amp);
+    }
+
+    public SineGenerator(Generator stepGen, Generator ampGen) {
+        this.stepGen = stepGen;
+        this.ampGen = ampGen;
     }
 
     public double next() {
-        double prevX = x;  // so that we return sin(start) first
-        x += step;
-        return Math.sin(prevX) * amp;
+        return Math.sin(stepGen.next()) * ampGen.next();
     }
-
 }
